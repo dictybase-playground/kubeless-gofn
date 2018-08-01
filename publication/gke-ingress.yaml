@@ -1,0 +1,23 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: nginx
+  labels:
+    app: kubeless-pubfn
+  name: pubfn
+  namespace: dictybase
+spec:
+  rules:
+  - host: betafunc.dictybase.org
+    http:
+      paths:
+      - backend:
+          serviceName: pubfn
+          servicePort: 8080
+        path: /publications
+  tls:
+  - hosts:
+    - betafunc.dictybase.org
+    secretName: dictybeta-staging-org-tls
