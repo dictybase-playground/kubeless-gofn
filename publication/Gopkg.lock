@@ -14,6 +14,15 @@
   version = "v1.0"
 
 [[projects]]
+  name = "github.com/gomodule/redigo"
+  packages = [
+    "internal",
+    "redis"
+  ]
+  revision = "9c11da706d9b7902c6da69c592f75637793fe121"
+  version = "v2.0.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/spacemonkeygo/errors"
   packages = [
@@ -31,6 +40,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ca9aed20cc9147d692d2fa34d383b86009ab77584771ba820917b92b8635ee0f"
+  inputs-digest = "96a0e9d98a9663b227faeb0246a85101f185831fce057885d62612e587041723"
   solver-name = "gps-cdcl"
   solver-version = 1

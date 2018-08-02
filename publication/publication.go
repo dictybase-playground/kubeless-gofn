@@ -3,9 +3,12 @@ package kubeless
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
+	"time"
 
 	"github.com/dictyBase/apihelpers/apherror"
 	"github.com/fatih/structs"
@@ -19,7 +22,10 @@ var (
 	titleErrKey   = errors.GenSym()
 	pointerErrKey = errors.GenSym()
 	paramErrKey   = errors.GenSym()
+	cache         Cacher
 )
+
+const REDIS_KEY = "PUBLICATION_KEY"
 
 type PubJsonAPI struct {
 	Data  *PubData `json:"data"`
@@ -148,6 +154,14 @@ type EuroPMC struct {
 	Version string `json:"version"`
 }
 
+func init() {
+	rhost := os.Getenv("REDIS_MASTER_SERVICE_HOST")
+	rport := os.Getenv("REDIS_MASTER_SERVICE_PORT")
+	if len(rhost) > 0 && len(rport) > 0 {
+		cache = NewRedisCache(fmt.Sprintf("%s:%s", rhost, rport))
+	}
+}
+
 func Handler(event functions.Event, ctx functions.Context) (string, error) {
 	r := event.Extensions.Request
 	w := event.Extensions.Response
@@ -165,11 +179,26 @@ func Handler(event functions.Event, ctx functions.Context) (string, error) {
 		json, status, err := JSONAPIError(
 			apherror.ErrNotFound.New(
 				"no route for %s",
-				r.URL,
+				generateLink(r),
 			),
 		)
 		w.WriteHeader(status)
 		return json, err
+	}
+	rkey := fmt.Sprintf(
+		"%s%s",
+		REDIS_KEY, r.Header.Get("X-Original-Uri"),
+	)
+	// if present return from cache
+	if cache != nil {
+		if cache.IsExist(rkey) {
+			v, err := cache.Get(rkey)
+			if err == nil {
+				log.Println("get key %s from cache", rkey)
+				return string(v), nil
+			}
+			log.Printf("error in getting existing key %s %s", rkey, err)
+		}
 	}
 	url := fmt.Sprintf(
 		"%s?format=json&resultType=core&query=ext_id:%s",
@@ -220,6 +249,11 @@ func Handler(event functions.Event, ctx functions.Context) (string, error) {
 		w.WriteHeader(status)
 		return json, err
 
+	}
+	if err := cache.Set(rkey, b, 30*24*time.Hour); err != nil {
+		log.Println("error in setting key %s %s", rkey, err)
+	} else {
+		log.Println("store key %s in cache", rkey)
 	}
 	return string(b), nil
 }
