@@ -47,6 +47,7 @@ type Publication struct {
 	Abstract      string    `json:"abstract"`
 	Doi           string    `json:"doi,omitempty"`
 	FullTextURL   string    `json:"full_text_url,omitempty"`
+	PubmedURL     string    `json:"pubmed_url"`
 	Journal       string    `json:"journal"`
 	Issn          string    `json:"issn,omitempty"`
 	Page          string    `json:"page,omitempty"`
@@ -270,6 +271,7 @@ func EuroPMC2Pub(pmc *EuroPMC) *Publication {
 		Issn:          result.JournalInfo.Journal.Issn,
 		Page:          result.PageInfo,
 		Pubmed:        result.Pmid,
+		PubmedURL:     fmt.Sprintf("https://pubmed.gov/%s", result.Pmid),
 		Title:         result.Title,
 		Source:        result.Source,
 		Status:        "published",
