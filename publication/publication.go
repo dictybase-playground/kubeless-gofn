@@ -22,7 +22,6 @@ var (
 	titleErrKey   = errors.GenSym()
 	pointerErrKey = errors.GenSym()
 	paramErrKey   = errors.GenSym()
-	cache         Cacher
 )
 
 const REDIS_KEY = "PUBLICATION_KEY"
@@ -154,13 +153,18 @@ type EuroPMC struct {
 	Version string `json:"version"`
 }
 
-func init() {
+func getRedisConnection() Cacher {
+	var cache Cacher
 	rhost := os.Getenv("REDIS_MASTER_SERVICE_HOST")
 	rport := os.Getenv("REDIS_MASTER_SERVICE_PORT")
 	if len(rhost) > 0 && len(rport) > 0 {
 		cache = NewRedisCache(fmt.Sprintf("%s:%s", rhost, rport))
+		log.Println("connected to redis")
 	}
+	return cache
 }
+
+var cache = getRedisConnection()
 
 func Handler(event functions.Event, ctx functions.Context) (string, error) {
 	r := event.Extensions.Request
@@ -189,16 +193,17 @@ func Handler(event functions.Event, ctx functions.Context) (string, error) {
 		"%s%s",
 		REDIS_KEY, r.Header.Get("X-Original-Uri"),
 	)
-	// if present return from cache
 	if cache != nil {
 		if cache.IsExist(rkey) {
 			v, err := cache.Get(rkey)
 			if err == nil {
-				log.Println("get key %s from cache", rkey)
+				log.Printf("got key %s from cache", rkey)
 				return string(v), nil
 			}
 			log.Printf("error in getting existing key %s %s", rkey, err)
 		}
+	} else {
+		log.Println("no redis cache")
 	}
 	url := fmt.Sprintf(
 		"%s?format=json&resultType=core&query=ext_id:%s",
@@ -250,10 +255,12 @@ func Handler(event functions.Event, ctx functions.Context) (string, error) {
 		return json, err
 
 	}
-	if err := cache.Set(rkey, b, 30*24*time.Hour); err != nil {
-		log.Println("error in setting key %s %s", rkey, err)
-	} else {
-		log.Println("store key %s in cache", rkey)
+	if cache != nil {
+		if err := cache.Set(rkey, b, 30*24*time.Hour); err != nil {
+			log.Printf("error in setting key %s %s", rkey, err)
+		} else {
+			log.Printf("stored key %s in cache", rkey)
+		}
 	}
 	return string(b), nil
 }

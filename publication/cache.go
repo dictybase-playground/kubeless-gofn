@@ -24,7 +24,7 @@ func NewRedisCache(addr string) Cacher {
 		IdleTimeout: 180 * time.Second,
 		Dial:        func() (redis.Conn, error) { return redis.Dial("tcp", addr) },
 	}
-	return &RedisCache{c}
+	return &RedisCache{client: c}
 }
 
 func (r *RedisCache) Get(key string) ([]byte, error) {
