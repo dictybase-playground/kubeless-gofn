@@ -158,8 +158,17 @@ func getRedisConnection() Cacher {
 	rhost := os.Getenv("REDIS_MASTER_SERVICE_HOST")
 	rport := os.Getenv("REDIS_MASTER_SERVICE_PORT")
 	if len(rhost) > 0 && len(rport) > 0 {
+		shost := os.Getenv("REDIS_SLAVE_SERVICE_HOST")
+		sport := os.Getenv("REDIS_SLAVE_SERVICE_PORT")
+		if len(shost) > 0 && len(sport) > 0 {
+			cache = NewRedisClusterCache(
+				[]string{
+					fmt.Sprintf("%s:%s", rhost, rport),
+					fmt.Sprintf("%s:%s", shost, sport),
+				})
+			return cache
+		}
 		cache = NewRedisCache(fmt.Sprintf("%s:%s", rhost, rport))
-		log.Println("connected to redis")
 	}
 	return cache
 }

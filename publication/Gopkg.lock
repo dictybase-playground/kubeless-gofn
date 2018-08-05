@@ -23,6 +23,12 @@
   version = "v2.0.0"
 
 [[projects]]
+  name = "github.com/mna/redisc"
+  packages = ["."]
+  revision = "1d42445fe2abe34af11aa88bc438225d98aee7b6"
+  version = "v1.1.2"
+
+[[projects]]
   branch = "master"
   name = "github.com/spacemonkeygo/errors"
   packages = [
@@ -40,6 +46,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "96a0e9d98a9663b227faeb0246a85101f185831fce057885d62612e587041723"
+  inputs-digest = "531fc6290aa1fb082f22990c465f606733db8b6a5d97ca8c7a9ebb4e9485a021"
   solver-name = "gps-cdcl"
   solver-version = 1
