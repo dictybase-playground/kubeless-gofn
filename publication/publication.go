@@ -166,8 +166,10 @@ func getRedisConnection() Cacher {
 					fmt.Sprintf("%s:%s", rhost, rport),
 					fmt.Sprintf("%s:%s", shost, sport),
 				})
+			log.Println("connected to redis cluster")
 			return cache
 		}
+		log.Println("connected to redis master")
 		cache = NewRedisCache(fmt.Sprintf("%s:%s", rhost, rport))
 	}
 	return cache

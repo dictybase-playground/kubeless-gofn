@@ -1,6 +1,7 @@
 package kubeless
 
 import (
+	"log"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -25,6 +26,9 @@ func NewRedisClusterCache(addrs []string) Cacher {
 	c := &redisc.Cluster{
 		StartupNodes: addrs,
 		CreatePool:   createPool,
+	}
+	if err := c.Refresh(); err != nil {
+		log.Fatalf("refresh failed %s", err)
 	}
 	return &RedisClusterCache{client: c}
 }
