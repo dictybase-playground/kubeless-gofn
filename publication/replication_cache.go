@@ -31,7 +31,11 @@ func (r *RedisReplicationCache) Delete(key string) error {
 }
 
 func (r *RedisReplicationCache) IsExist(key string) bool {
-	if err := r.slave.Exists(key).Err(); err != nil {
+	rs, err := r.slave.Exists(key).Result()
+	if err != nil {
+		return false
+	}
+	if rs == 0 {
 		return false
 	}
 	return true
