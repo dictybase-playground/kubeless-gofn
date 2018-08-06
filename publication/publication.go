@@ -179,6 +179,7 @@ var cache = getRedisConnection()
 func Handler(event functions.Event, ctx functions.Context) (string, error) {
 	r := event.Extensions.Request
 	w := event.Extensions.Response
+	w.Header().Set("Content-Type", "application/vnd.api+json")
 	if r.Method != "GET" {
 		json, status, err := JSONAPIError(
 			apherror.ErrMethodNotAllowed.New(
