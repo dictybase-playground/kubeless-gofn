@@ -12,3 +12,6 @@
 *.out
 vendor/
 pubfn.zip
+dashfn.zip
+*.gff3
+metadata.json
