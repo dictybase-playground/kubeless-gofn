@@ -58,6 +58,7 @@ func init() {
 	if err != nil {
 		return
 	}
+	defer st.Close()
 	hasAPIServer = true
 	r.Get("/dashboard/genomes/{taxonid}/{biotype}", func(w http.ResponseWriter, r *http.Request) {
 		key := fmt.Sprintf("%s-%s", KEY_PREFIX, chi.URLParam(r, "taxonid"))
@@ -91,6 +92,7 @@ func Handler(event functions.Event, ctx functions.Context) (string, error) {
 			fmt.Sprintf("error %s in getting storage handler", err),
 		)
 	}
+	defer storage.Close()
 	// HTTP POST to "/genomes" expects a gff3 and metadata.json file for uploading
 	//	---- metadata structure
 	//  {

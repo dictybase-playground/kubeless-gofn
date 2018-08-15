@@ -9,6 +9,7 @@ type Storage interface {
 	Set(string, string, string) error
 	Delete(string, ...string) error
 	IsExist(string, string) bool
+	Close() error
 }
 
 type RedisStorage struct {
@@ -21,6 +22,16 @@ func NewRedisStorage(master, slave string) Storage {
 		master: redis.NewClient(&redis.Options{Addr: master}),
 		slave:  redis.NewClient(&redis.Options{Addr: slave}),
 	}
+}
+
+func (r *RedisStorage) Close() error {
+	if err := r.master.Close(); err != nil {
+		return err
+	}
+	if err := r.slave.Close(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *RedisStorage) Get(key, field string) (string, error) {
