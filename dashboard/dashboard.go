@@ -58,7 +58,6 @@ func init() {
 	if err != nil {
 		return
 	}
-	defer st.Close()
 	hasAPIServer = true
 	r.Get("/dashboard/genomes/{taxonid}/{biotype}", func(w http.ResponseWriter, r *http.Request) {
 		key := fmt.Sprintf("%s-%s", KEY_PREFIX, chi.URLParam(r, "taxonid"))
@@ -174,14 +173,11 @@ func Handler(event functions.Event, ctx functions.Context) (string, error) {
 		url := fmt.Sprintf("http://localhost:%d%s", apiPort, r.Header.Get("X-Original-Uri"))
 		resp, err := http.Get(url)
 		if err != nil {
-			payload, _, err := JSONAPIError(
-				apherror.Errhttp.NewClass(
-					"error in retrieving data",
-					errhttp.SetStatusCode(resp.StatusCode),
-				).New(err.Error()),
+			return httpError(
+				w,
+				resp.StatusCode,
+				fmt.Sprintf("error in retrieving data %s", err),
 			)
-			w.WriteHeader(resp.StatusCode)
-			return payload, err
 		}
 		defer resp.Body.Close()
 		b, err := ioutil.ReadAll(resp.Body)
@@ -189,6 +185,13 @@ func Handler(event functions.Event, ctx functions.Context) (string, error) {
 			return internalServerError(
 				w,
 				fmt.Sprintf("error in reading response %s", err),
+			)
+		}
+		if resp.StatusCode >= 400 {
+			return httpError(
+				w,
+				resp.StatusCode,
+				string(b),
 			)
 		}
 		return string(b), nil
@@ -232,12 +235,24 @@ func JSONAPIError(err error) (string, int, error) {
 }
 
 func internalServerError(w http.ResponseWriter, msg string) (string, error) {
-	str, _, err := JSONAPIError(
-		apherror.Errhttp.NewClass(
-			fmt.Sprintf("%d Internal Server Error", http.StatusInternalServerError),
-			errhttp.SetStatusCode(http.StatusInternalServerError),
-		).New(msg),
+	txt := http.StatusText(http.StatusInternalServerError)
+	err := apherror.Errhttp.NewClass(
+		txt,
+		errhttp.SetStatusCode(http.StatusInternalServerError),
 	)
+	err.MustAddData(titleErrKey, txt)
+	str, _, errn := JSONAPIError(err.New(msg))
 	w.WriteHeader(http.StatusInternalServerError)
-	return str, err
+	return str, errn
+}
+
+func httpError(w http.ResponseWriter, code int, msg string) (string, error) {
+	err := apherror.Errhttp.NewClass(
+		http.StatusText(code),
+		errhttp.SetStatusCode(code),
+	)
+	err.MustAddData(titleErrKey, "http error")
+	str, _, errn := JSONAPIError(err.New(msg))
+	w.WriteHeader(code)
+	return str, errn
 }
