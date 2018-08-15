@@ -3,12 +3,14 @@ package kubeless
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 
 	"github.com/dictyBase/apihelpers/apherror"
+	"github.com/go-chi/chi"
 	"github.com/kubeless/kubeless/pkg/functions"
 	"github.com/minio/minio-go"
 	"github.com/spacemonkeygo/errors"
@@ -19,6 +21,8 @@ var (
 	titleErrKey   = errors.GenSym()
 	pointerErrKey = errors.GenSym()
 	paramErrKey   = errors.GenSym()
+	hasAPIServer  = false
+	apiPort       = 33333
 )
 
 const KEY_PREFIX = "dashboard"
@@ -46,6 +50,34 @@ func getStorage() (Storage, error) {
 		return st, nil
 	}
 	return st, fmt.Errorf("no storage backend available")
+}
+
+func init() {
+	r := chi.NewRouter()
+	st, err := getStorage()
+	if err != nil {
+		return
+	}
+	hasAPIServer = true
+	r.Get("/dashboard/genomes/{taxonid}/{biotype}", func(w http.ResponseWriter, r *http.Request) {
+		key := fmt.Sprintf("%s-%s", KEY_PREFIX, chi.URLParam(r, "taxonid"))
+		field := chi.URLParam(r, "biotype")
+		if !st.IsExist(key, field) {
+			http.Error(w, fmt.Sprintf("key %s does not exist", key), http.StatusNotFound)
+			return
+		}
+		payload, err := st.Get(key, field)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("error %s in retrieving %s", err, key), http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprintf(w, "%s", payload)
+	})
+	go func() {
+		lport := fmt.Sprintf(":%d", apiPort)
+		log.Printf("starting localhost server on %s", lport)
+		http.ListenAndServe(lport, r)
+	}()
 }
 
 func Handler(event functions.Event, ctx functions.Context) (string, error) {
@@ -129,6 +161,35 @@ func Handler(event functions.Event, ctx functions.Context) (string, error) {
 			)
 		}
 		return fmt.Sprintf("%d OK", http.StatusOK), nil
+	}
+	if r.Method == "GET" {
+		if !hasAPIServer {
+			return internalServerError(
+				w,
+				"api server have not been started",
+			)
+		}
+		url := fmt.Sprintf("http://localhost:%d%s", apiPort, r.Header.Get("X-Original-Uri"))
+		resp, err := http.Get(url)
+		if err != nil {
+			payload, _, err := JSONAPIError(
+				apherror.Errhttp.NewClass(
+					"error in retrieving data",
+					errhttp.SetStatusCode(resp.StatusCode),
+				).New(err.Error()),
+			)
+			w.WriteHeader(resp.StatusCode)
+			return payload, err
+		}
+		defer resp.Body.Close()
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return internalServerError(
+				w,
+				fmt.Sprintf("error in reading response %s", err),
+			)
+		}
+		return string(b), nil
 	}
 	json, status, err := JSONAPIError(
 		apherror.ErrMethodNotAllowed.New(
