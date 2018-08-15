@@ -10,10 +10,11 @@ import (
 	"sync"
 )
 
-type GFF3Consumer func(Storage, string, <-chan string) (<-chan error, error)
+type GFF3Consumer func(Storage, string, string, <-chan string) (<-chan error, error)
 
 var rmap = map[string]GFF3Consumer{
-	"chromosome": GFF3ChrConsumer,
+	"chromosome":  GFF3RegionConsumer,
+	"supercontig": GFF3RegionConsumer,
 }
 
 type chrJsonAPI struct {
@@ -72,7 +73,7 @@ func storeGFFInforamtion(r io.Reader, st Storage, key string, ftypes ...string) 
 	// Now the GFF3 consumer receives and extract lines
 	for i, t := range ftypes {
 		if v, ok := rmap[t]; ok {
-			errc, err := v(st, key, allc[i])
+			errc, err := v(st, key, t, allc[i])
 			if err != nil {
 				return fmt.Errorf("unable to create consumer for %s %s", t, err)
 			}
@@ -127,7 +128,7 @@ func GFF3Splitter(in <-chan string, len int) ([]chan string, <-chan error, error
 	return out, errc, nil
 }
 
-func GFF3ChrConsumer(st Storage, key string, in <-chan string) (<-chan error, error) {
+func GFF3RegionConsumer(st Storage, key, t string, in <-chan string) (<-chan error, error) {
 	errc := make(chan error, 1)
 	go func() {
 		defer close(errc)
@@ -144,7 +145,7 @@ func GFF3ChrConsumer(st Storage, key string, in <-chan string) (<-chan error, er
 				continue
 			}
 			s := strings.Split(line, "\t")
-			if s[2] != "chromosome" {
+			if s[2] != t {
 				continue
 			}
 			start, _ := strconv.Atoi(s[3])
@@ -158,7 +159,7 @@ func GFF3ChrConsumer(st Storage, key string, in <-chan string) (<-chan error, er
 			chr.Id = strings.Split(fields[0], "=")[1]
 			chr.Name = strings.Split(fields[1], "=")[1]
 			chrData = append(chrData, &chrdata{
-				Type:       "chromosomes",
+				Type:       fmt.Sprintf("%ss", t),
 				Id:         chr.Id,
 				Attributes: chr,
 			})
@@ -167,8 +168,8 @@ func GFF3ChrConsumer(st Storage, key string, in <-chan string) (<-chan error, er
 		if err != nil {
 			errc <- fmt.Errorf("error in json encoding %s", err)
 		}
-		if err := st.Set(key, "chromosome", string(ct)); err != nil {
-			errc <- fmt.Errorf("error in storing chromosomal data %s", err)
+		if err := st.Set(key, fmt.Sprintf("%ss", t), string(ct)); err != nil {
+			errc <- fmt.Errorf("error in storing %s data %s", t, err)
 		}
 	}()
 	return errc, nil
@@ -219,7 +220,7 @@ func GFF3GenericConsumer(st Storage, key, t string, in <-chan string) (<-chan er
 			errc <- fmt.Errorf("error in json encoding %s", err)
 		}
 		if err := st.Set(key, fmt.Sprintf("%ss", t), string(ct)); err != nil {
-			errc <- fmt.Errorf("error in storing gene data %s", err)
+			errc <- fmt.Errorf("error in storing %t data %s", t, err)
 		}
 	}()
 	return errc, nil
