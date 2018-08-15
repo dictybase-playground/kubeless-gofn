@@ -68,7 +68,11 @@ download the gff3 file from object storage and persist the information in redis
 cache. An example `HTTP` request to this endpoint will look like this.
 > `$_> curl -k -d @metadata.json https://betafunction.dictybase.local/dashboard/genomes`
 
-__GET__ `/dashboard/genomes/{taxon_id}/regions` - Information about reference feature such as chromosome.
+__GET__ `/dashboard/genomes/{taxon_id}/{type}` - Information about reference feature such as chromosome.
+
+For reference features such as chromosome, supercontig the json format will be the following   
+> `$_> curl -k https://betafunction.dictybase.local/dashboard/genomes/44689/chromosomes`   
+
 ```json
 {
     "data": [
@@ -86,7 +90,9 @@ __GET__ `/dashboard/genomes/{taxon_id}/regions` - Information about reference fe
 }
 ```
 
-__GET__ `/dashboard/genomes/{taxon_id}/genes` - Information about genes.
+> `$_> curl -k https://betafunction.dictybase.local/dashboard/genomes/44689/genes`   
+The format for the other features(gene,mRNA, pseudogene etc)
+
 ```json
 {
     "data": [
