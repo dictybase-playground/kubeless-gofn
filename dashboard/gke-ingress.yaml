@@ -4,13 +4,14 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
     kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/client-body-buffer-size: 250M
   labels:
     app: kubeless-dashfn
   name: dashfn
   namespace: dictybase
 spec:
   rules:
-  - host: betafunc.dictybase.local
+  - host: betafunc.dictybase.org
     http:
       paths:
       - backend:
@@ -19,5 +20,5 @@ spec:
         path: /dashboard
   tls:
   - hosts:
-    - betafunc.dictybase.local
+    - betafunc.dictybase.org
     secretName: dictybeta-staging-org-tls
