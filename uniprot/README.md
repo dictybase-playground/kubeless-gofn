@@ -1,5 +1,6 @@
-# dashboard function
-A golang based [kubeless](https://kubeless.io) function to deploy in kubernetes cluster.
+# uniprot cache function
+A golang based [kubeless](https://kubeless.io) function to store mapping
+between uniprot and *D.discoideum* gene identifiers.
 
 ## Dependencies
 [Redis](https://redis.io) have to be installed
