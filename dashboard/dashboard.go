@@ -83,7 +83,7 @@ func init() {
 func Handler(event functions.Event, ctx functions.Context) (string, error) {
 	r := event.Extensions.Request
 	w := event.Extensions.Response
-	w.Header().Set("Content-Type", "application/vnd.api+json")
+	setRequiredHeaders(w)
 	storage, err := getStorage()
 	if err != nil {
 		return internalServerError(
@@ -255,4 +255,16 @@ func httpError(w http.ResponseWriter, code int, msg string) (string, error) {
 	str, _, errn := JSONAPIError(err.New(msg))
 	w.WriteHeader(code)
 	return str, errn
+}
+
+func setRequiredHeaders(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/vnd.api+json")
+	// cors headers
+	w.Header().Set("Vary", "Origin")
+	w.Header().Set("Vary", "Access-Control-Request-Method")
+	w.Header().Set("Vary", "Access-Control-Request-Headers")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Expose-Headers", "*")
 }
