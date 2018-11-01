@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/dictyBase/apihelpers/apherror"
 	"github.com/go-chi/chi"
@@ -25,7 +26,10 @@ var (
 	apiPort       = 33333
 )
 
-const KEY_PREFIX = "dashboard"
+const (
+	KEY_PREFIX = "dashboard"
+	toLower    = 'a' - 'A'
+)
 
 type MetaData struct {
 	TaxonId    string `json:"taxon_id"`
@@ -83,7 +87,7 @@ func init() {
 func Handler(event functions.Event, ctx functions.Context) (string, error) {
 	r := event.Extensions.Request
 	w := event.Extensions.Response
-	setRequiredHeaders(w)
+	setRequiredHeaders(w, r)
 	storage, err := getStorage()
 	if err != nil {
 		return internalServerError(
@@ -257,14 +261,66 @@ func httpError(w http.ResponseWriter, code int, msg string) (string, error) {
 	return str, errn
 }
 
-func setRequiredHeaders(w http.ResponseWriter) {
+func setRequiredHeaders(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/vnd.api+json")
 	// cors headers
 	w.Header().Set("Vary", "Origin")
-	w.Header().Set("Vary", "Access-Control-Request-Method")
-	w.Header().Set("Vary", "Access-Control-Request-Headers")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Access-Control-Expose-Headers", "*")
+	if r.Method == "OPTIONS" {
+		w.Header().Set("Vary", "Access-Control-Request-Method")
+		w.Header().Set("Vary", "Access-Control-Request-Headers")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+		reqHeaders := parseHeaderList(r.Header.Get("Access-Control-Request-Headers"))
+		if len(reqHeaders) > 0 {
+			w.Header().Set(
+				"Access-Control-Allow-Headers",
+				strings.Join(reqHeaders, ","),
+			)
+		}
+	}
+}
+
+// parseHeaderList tokenize + normalize a string containing a list of headers
+func parseHeaderList(headerList string) []string {
+	l := len(headerList)
+	h := make([]byte, 0, l)
+	upper := true
+	// Estimate the number headers in order to allocate the right splice size
+	t := 0
+	for i := 0; i < l; i++ {
+		if headerList[i] == ',' {
+			t++
+		}
+	}
+	headers := make([]string, 0, t)
+	for i := 0; i < l; i++ {
+		b := headerList[i]
+		if b >= 'a' && b <= 'z' {
+			if upper {
+				h = append(h, b-toLower)
+			} else {
+				h = append(h, b)
+			}
+		} else if b >= 'A' && b <= 'Z' {
+			if !upper {
+				h = append(h, b+toLower)
+			} else {
+				h = append(h, b)
+			}
+		} else if b == '-' || (b >= '0' && b <= '9') {
+			h = append(h, b)
+		}
+
+		if b == ' ' || b == ',' || i == l-1 {
+			if len(h) > 0 {
+				// Flush the found header
+				headers = append(headers, string(h))
+				h = h[:0]
+				upper = true
+			}
+		} else {
+			upper = b == '-'
+		}
+	}
+	return headers
 }
