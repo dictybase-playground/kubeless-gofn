@@ -157,7 +157,10 @@ func GFF3RegionConsumer(st Storage, key, t string, in <-chan string) (<-chan err
 			}
 			fields := strings.Split(s[8], ";")
 			chr.Id = strings.Split(fields[0], "=")[1]
-			chr.Name = strings.Split(fields[1], "=")[1]
+			chr.Name = strings.TrimSuffix(
+				strings.Split(fields[1], "=")[1],
+				"\n",
+			)
 			chrData = append(chrData, &chrdata{
 				Type:       fmt.Sprintf("%ss", t),
 				Id:         chr.Id,
