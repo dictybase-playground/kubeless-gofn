@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	pubRegxp      = regexp.MustCompile(`^/(\d+)$`)
+	pubRegxp      = regexp.MustCompile(`^/publications/(\d+)$`)
 	titleErrKey   = errors.GenSym()
 	pointerErrKey = errors.GenSym()
 	paramErrKey   = errors.GenSym()
@@ -49,21 +49,23 @@ type Author struct {
 }
 
 type Publication struct {
-	Abstract      string    `json:"abstract"`
-	Doi           string    `json:"doi,omitempty"`
-	FullTextURL   string    `json:"full_text_url,omitempty"`
-	PubmedURL     string    `json:"pubmed_url"`
-	Journal       string    `json:"journal"`
-	Issn          string    `json:"issn,omitempty"`
-	Page          string    `json:"page,omitempty"`
-	Pubmed        string    `json:"pubmed"`
-	Title         string    `json:"title"`
-	Source        string    `json:"source"`
-	Status        string    `json:"status"`
-	PubType       string    `json:"pub_type"`
-	Issue         int64     `json:"issue,omitempty"`
-	PublishedDate string    `json:"publication_date"`
-	Authors       []*Author `json:"authors"`
+	Abstract       string    `json:"abstract"`
+	Doi            string    `json:"doi,omitempty"`
+	FullTextURL    string    `json:"full_text_url,omitempty"`
+	PubmedURL      string    `json:"pubmed_url"`
+	Journal        string    `json:"journal"`
+	Issn           string    `json:"issn,omitempty"`
+	Page           string    `json:"page,omitempty"`
+	Pubmed         string    `json:"pubmed"`
+	Title          string    `json:"title"`
+	Source         string    `json:"source"`
+	Status         string    `json:"status"`
+	PubType        string    `json:"pub_type"`
+	Issue          string    `json:"issue"`
+	Volume         string    `json:"volume"`
+	JournalIssueId int64     `json:"journalIssueId,omitempty`
+	PublishedDate  string    `json:"publication_date"`
+	Authors        []*Author `json:"authors"`
 }
 
 type EuroPMC struct {
@@ -133,6 +135,8 @@ type EuroPMC struct {
 				MonthOfPublication   int64  `json:"monthOfPublication"`
 				PrintPublicationDate string `json:"printPublicationDate"`
 				YearOfPublication    int64  `json:"yearOfPublication"`
+				Issue                string `json:"issue"`
+				Volume               string `json:"volume"`
 			} `json:"journalInfo"`
 			KeywordList struct {
 				Keyword []string `json:"keyword"`
@@ -189,7 +193,7 @@ func Handler(event functions.Event, ctx functions.Context) (string, error) {
 		w.WriteHeader(status)
 		return json, err
 	}
-	m := pubRegxp.FindStringSubmatch(r.URL.Path)
+	m := pubRegxp.FindStringSubmatch(r.Header.Get("X-Original-Uri"))
 	if len(m) == 0 {
 		json, status, err := JSONAPIError(
 			apherror.ErrNotFound.New(
@@ -317,19 +321,21 @@ func JSONAPIError(err error) (string, int, error) {
 func EuroPMC2Pub(pmc *EuroPMC) *Publication {
 	result := pmc.ResultList.Result[0]
 	pub := &Publication{
-		Abstract:      result.AbstractText,
-		Doi:           result.Doi,
-		Journal:       result.JournalInfo.Journal.Title,
-		Issn:          result.JournalInfo.Journal.Issn,
-		Page:          result.PageInfo,
-		Pubmed:        result.Pmid,
-		PubmedURL:     fmt.Sprintf("https://pubmed.gov/%s", result.Pmid),
-		Title:         result.Title,
-		Source:        result.Source,
-		Status:        "published",
-		PubType:       "Journal Article",
-		Issue:         result.JournalInfo.JournalIssueID,
-		PublishedDate: result.FirstPublicationDate,
+		Abstract:       result.AbstractText,
+		Doi:            result.Doi,
+		Journal:        result.JournalInfo.Journal.Title,
+		Issn:           result.JournalInfo.Journal.Issn,
+		Page:           result.PageInfo,
+		Pubmed:         result.Pmid,
+		PubmedURL:      fmt.Sprintf("https://pubmed.gov/%s", result.Pmid),
+		Title:          result.Title,
+		Source:         result.Source,
+		Status:         "published",
+		PubType:        "Journal Article",
+		Issue:          result.JournalInfo.Issue,
+		Volume:         result.JournalInfo.Volume,
+		JournalIssueId: result.JournalInfo.JournalIssueID,
+		PublishedDate:  result.FirstPublicationDate,
 	}
 	rstruct := structs.New(result)
 	if !rstruct.Field("FullTextURLList").IsZero() {
