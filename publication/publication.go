@@ -63,7 +63,7 @@ type Publication struct {
 	PubType        string    `json:"pub_type"`
 	Issue          string    `json:"issue"`
 	Volume         string    `json:"volume"`
-	JournalIssueId int64     `json:"journalIssueId,omitempty`
+	JournalIssueId int64     `json:"journalIssueId,omitempty"`
 	PublishedDate  string    `json:"publication_date"`
 	Authors        []*Author `json:"authors"`
 }
