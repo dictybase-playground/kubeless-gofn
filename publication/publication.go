@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	pubRegxp      = regexp.MustCompile(`^/publications/(\d+)$`)
+	pubRegxp      = regexp.MustCompile(`^/(\d+)$`)
 	titleErrKey   = errors.GenSym()
 	pointerErrKey = errors.GenSym()
 	paramErrKey   = errors.GenSym()
@@ -193,7 +193,7 @@ func Handler(event functions.Event, ctx functions.Context) (string, error) {
 		w.WriteHeader(status)
 		return json, err
 	}
-	m := pubRegxp.FindStringSubmatch(r.Header.Get("X-Original-Uri"))
+	m := pubRegxp.FindStringSubmatch(r.URL.Path)
 	if len(m) == 0 {
 		json, status, err := JSONAPIError(
 			apherror.ErrNotFound.New(
