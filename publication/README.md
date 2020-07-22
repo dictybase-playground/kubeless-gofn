@@ -4,10 +4,8 @@ A Golang-based [Kubeless](https://kubeless.io) function to deploy in a Kubernete
 
 ## Dependencies
 
-It is recommended to have [Redis](https://redis.io) installed for caching the
-function output. [Instructions](https://dictybase-docker.github.io/developer-docs/deployment/redis/)
-
-This requires at least `v1.0.7` of Kubeless.
+- [Kubeless v1.0.7](https://github.com/kubeless/kubeless/releases/tag/v1.0.7)
+- [Redis](https://dictybase-docker.github.io/developer-docs/deployment/redis/)
 
 ## Deploy the function
 
@@ -17,11 +15,12 @@ This requires at least `v1.0.7` of Kubeless.
 > `--dependencies go.mod --namespace dictybase`
 
 - check the status of function
-  > `$_> kubeless function ls -n dictybase`
+
+> `$_> kubeless function ls -n dictybase`
 
 ## Add Ingress
 
-[GKE Ingress Dev example](./gke-ingress-dev.yaml)
+Create a YAML file like this [GKE Ingress Dev example](./gke-ingress-dev.yaml).
 
 > `$_> kubectl apply -f gke-ingress-dev.yaml -n dictybase`
 
