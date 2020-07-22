@@ -1,37 +1,40 @@
 # publication function
-A golang based [kubeless](https://kubeless.io) function to deploy in kubernetes cluster.
+
+A Golang-based [Kubeless](https://kubeless.io) function to deploy in a Kubernetes cluster.
 
 ## Dependencies
-It is recommended to have [redis](https://redis.io) installed for caching the
-function output. The instructions are given
-[here](https://github.com/dictyBase/Migration/blob/master/deploy.md#redis).
+
+It is recommended to have [Redis](https://redis.io) installed for caching the
+function output. [Instructions](https://dictybase-docker.github.io/developer-docs/deployment/redis/)
+
+This requires at least `v1.0.7` of Kubeless.
 
 ## Deploy the function
-> `$_> zip pubfn.zip *.go Gopkg.toml`   
-> `$_>  kubeless function deploy \`   
-> `pubfn --runtime go1.10 --from-file pubfn.zip --handler publication.Handler`   
-> `--dependencies Gopkg.toml --namespace dictybase`
 
-* check the status of function
-> `$_> kubeless function ls --namespace dictybase`
+> `$_> zip pubfn.zip *.go go.mod`  
+> `$_> kubeless function deploy \`  
+> `pubfn --runtime go1.13 --from-file pubfn.zip --handler publication.Handler`  
+> `--dependencies go.mod --namespace dictybase`
 
-## Add a http trigger to create an ingress
-> `$_> kubeless trigger http create pubfn \`   
-> `--function-name pubfn --hostname betafunc.dictybase.local \`   
-> `--tls-secret dictybase-local-tls --namespace dictybase --path publications`
+- check the status of function
+  > `$_> kubeless function ls -n dictybase`
 
-The above command assumes a presence of tls secret`(dictybase-local-tls)` and mapping
-to the host`(betafunc.dictybase.local)`.
+## Add Ingress
+
+[GKE Ingress Dev example](./gke-ingress-dev.yaml)
+
+> `$_> kubectl apply -f gke-ingress-dev.yaml -n dictybase`
 
 ## Endpoints
-It will available through the mapped host, for example through
-`betafunc.dictybase.local` assuming the above function.
 
-__GET__ `/publications/{pubmed-id}` - Information about a publication with pubmed id.   
+It will be available through the mapped host, for example through
+`betafunc.dictybase.org` assuming the above function.
+
+**GET** `/publications/{pubmed-id}` - Information about a publication with given Pubmed ID.
 
 > `$_> curl -k https://betafunc.dictybase.local/publications/30048658`
 
-The expected output will be in the following structure 
+The expected output will be in the following structure
 
 ```json
 {
@@ -109,5 +112,4 @@ The expected output will be in the following structure
     "type": "publications"
   }
 }
-
 ```
