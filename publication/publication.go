@@ -298,7 +298,7 @@ func JSONAPIError(err error) (string, int, error) {
 		Title:  title,
 		Detail: errhttp.GetErrorBody(err),
 		Meta: map[string]interface{}{
-			"creator": "kubless gofn error",
+			"creator": "kubeless gofn error",
 		},
 	}
 	errSource := new(apherror.ErrorSource)
