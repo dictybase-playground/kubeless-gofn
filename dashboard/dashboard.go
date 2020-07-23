@@ -63,7 +63,7 @@ func init() {
 		return
 	}
 	hasAPIServer = true
-	r.Get("/dashboard/genomes/{taxonid}/{biotype}", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/genomes/{taxonid}/{biotype}", func(w http.ResponseWriter, r *http.Request) {
 		key := fmt.Sprintf("%s-%s", KEY_PREFIX, chi.URLParam(r, "taxonid"))
 		field := chi.URLParam(r, "biotype")
 		if !st.IsExist(key, field) {
@@ -174,7 +174,8 @@ func Handler(event functions.Event, ctx functions.Context) (string, error) {
 				"api server have not been started",
 			)
 		}
-		url := fmt.Sprintf("http://localhost:%d%s", apiPort, r.Header.Get("X-Original-Uri"))
+		url := fmt.Sprintf("http://localhost:%d%s", apiPort, r.URL.Path)
+
 		resp, err := http.Get(url)
 		if err != nil {
 			return httpError(
