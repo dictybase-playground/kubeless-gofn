@@ -206,7 +206,7 @@ func Handler(event functions.Event, ctx functions.Context) (string, error) {
 	}
 	rkey := fmt.Sprintf(
 		"%s%s",
-		REDIS_KEY, r.Header.Get("X-Original-Uri"),
+		REDIS_KEY, r.URL.Path,
 	)
 	if cache != nil {
 		if cache.IsExist(rkey) {
