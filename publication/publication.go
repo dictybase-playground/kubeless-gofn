@@ -319,6 +319,10 @@ func JSONAPIError(err error) (string, int, error) {
 }
 
 func EuroPMC2Pub(pmc *EuroPMC) *Publication {
+	if len(pmc.ResultList.Result) < 1 {
+		log.Println("no results found for publication")
+		return &Publication{}
+	}
 	result := pmc.ResultList.Result[0]
 	pub := &Publication{
 		Abstract:       result.AbstractText,
